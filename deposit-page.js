@@ -22,7 +22,9 @@
   var copyBtn = null;
 
   var NETWORK = 'BEP20';
-  var PAY_CURRENCY = 'USDT';
+  var DISPLAY_CURRENCY = 'USDT';
+  // NOWPayments pay_currency code for USDT on BSC
+  var PAY_CURRENCY_CODE = 'usdtbsc';
   var EDGE_FUNCTION = (window.DEPOSIT_EDGE_FUNCTION || 'nowpayments-create-payment');
   // Used only when we must create a payment. Keep small but > 0.
   var DEFAULT_AMOUNT_USD = Number(window.DEPOSIT_DEFAULT_AMOUNT_USD || 10);
@@ -40,7 +42,7 @@
 
   function setLoading(msg) {
     if (addressTextEl) addressTextEl.textContent = msg || 'Loading...';
-    if (qrCaptionEl) qrCaptionEl.textContent = 'Fetching ' + NETWORK + ' ' + PAY_CURRENCY + ' address...';
+    if (qrCaptionEl) qrCaptionEl.textContent = 'Fetching ' + NETWORK + ' ' + DISPLAY_CURRENCY + ' address...';
     if (qrImgEl) qrImgEl.src = placeholderQrDataUri();
   }
 
@@ -62,7 +64,7 @@
       return;
     }
     if (addressTextEl) addressTextEl.textContent = addr;
-    if (qrCaptionEl) qrCaptionEl.textContent = 'This address only supports deposits of ' + NETWORK + ' ' + PAY_CURRENCY;
+    if (qrCaptionEl) qrCaptionEl.textContent = 'This address only supports deposits of ' + NETWORK + ' ' + DISPLAY_CURRENCY;
     updateQr(addr);
   }
 
@@ -95,7 +97,7 @@
       + '?select=pay_address,payment_id,network,pay_currency,updated_at'
       + '&user_id=eq.' + encodeURIComponent(userId)
       + '&network=eq.' + encodeURIComponent(NETWORK)
-      + '&pay_currency=eq.' + encodeURIComponent(PAY_CURRENCY)
+      + '&pay_currency=eq.' + encodeURIComponent(PAY_CURRENCY_CODE)
       + '&limit=1';
     return fetch(url, { method: 'GET', headers: SB.headers() })
       .then(function (r) { if (!r.ok) return null; return safeJson(r); })
