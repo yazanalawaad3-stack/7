@@ -22,9 +22,7 @@
   var copyBtn = null;
 
   var NETWORK = 'BEP20';
-  var DISPLAY_CURRENCY = 'USDT';
-  // NOWPayments pay_currency code for USDT on BSC
-  var PAY_CURRENCY_CODE = 'usdtbsc';
+  var PAY_CURRENCY = 'USDT';
   var EDGE_FUNCTION = (window.DEPOSIT_EDGE_FUNCTION || 'nowpayments-create-payment');
   // Used only when we must create a payment. Keep small but > 0.
   var DEFAULT_AMOUNT_USD = Number(window.DEPOSIT_DEFAULT_AMOUNT_USD || 10);
@@ -42,11 +40,25 @@
 
   function setLoading(msg) {
     if (addressTextEl) addressTextEl.textContent = msg || 'Loading...';
-    if (qrCaptionEl) qrCaptionEl.textContent = 'Fetching ' + NETWORK + ' ' + DISPLAY_CURRENCY + ' address...';
+    if (qrCaptionEl) qrCaptionEl.textContent = 'Fetching ' + NETWORK + ' ' + PAY_CURRENCY + ' address...';
     if (qrImgEl) qrImgEl.src = placeholderQrDataUri();
   }
 
-  function updateQr(address) {
+  
+  function isAtlosPaymentLink(value) {
+    var v = value ? String(value).trim() : '';
+    return /^https?:\/\/atlos\.io\/payment\//i.test(v);
+  }
+
+  function openIfLink(value) {
+    var v = value ? String(value).trim() : '';
+    if (!v) return;
+    if (/^https?:\/\//i.test(v)) {
+      try { window.open(v, '_blank', 'noopener'); } catch (_e) { window.location.href = v; }
+    }
+  }
+
+function updateQr(address) {
     if (!qrImgEl) return;
     var data = address ? String(address).trim() : '';
     if (!data) {
@@ -64,7 +76,13 @@
       return;
     }
     if (addressTextEl) addressTextEl.textContent = addr;
-    if (qrCaptionEl) qrCaptionEl.textContent = 'This address only supports deposits of ' + NETWORK + ' ' + DISPLAY_CURRENCY;
+    if (qrCaptionEl) {
+      if (isAtlosPaymentLink(addr)) {
+        qrCaptionEl.textContent = 'Scan the QR code or open the link to complete a ' + NETWORK + ' ' + PAY_CURRENCY + ' deposit.';
+      } else {
+        qrCaptionEl.textContent = 'This address only supports deposits of ' + NETWORK + ' ' + PAY_CURRENCY;
+      }
+    }
     updateQr(addr);
   }
 
@@ -97,7 +115,7 @@
       + '?select=pay_address,payment_id,network,pay_currency,updated_at'
       + '&user_id=eq.' + encodeURIComponent(userId)
       + '&network=eq.' + encodeURIComponent(NETWORK)
-      + '&pay_currency=eq.' + encodeURIComponent(PAY_CURRENCY_CODE)
+      + '&pay_currency=eq.' + encodeURIComponent(PAY_CURRENCY)
       + '&limit=1';
     return fetch(url, { method: 'GET', headers: SB.headers() })
       .then(function (r) { if (!r.ok) return null; return safeJson(r); })
@@ -143,6 +161,15 @@
     });
   }
 
+  function wireOpenLink() {
+    var open = function () {
+      var v = (addressTextEl && addressTextEl.textContent ? addressTextEl.textContent : '').trim();
+      if (isAtlosPaymentLink(v)) openIfLink(v);
+    };
+    if (qrImgEl) qrImgEl.addEventListener('click', open);
+    if (addressTextEl) addressTextEl.addEventListener('click', open);
+  }
+
   function wireNetworkButtons() {
     networkButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -167,6 +194,7 @@
     setActiveNetworkUI();
     wireNetworkButtons();
     wireCopy();
+    wireOpenLink();
     setLoading('Loading...');
 
     getCurrentSupabaseUserId().then(function (userId) {
