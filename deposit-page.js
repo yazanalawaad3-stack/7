@@ -44,21 +44,7 @@
     if (qrImgEl) qrImgEl.src = placeholderQrDataUri();
   }
 
-  
-  function isAtlosPaymentLink(value) {
-    var v = value ? String(value).trim() : '';
-    return /^https?:\/\/atlos\.io\/payment\//i.test(v);
-  }
-
-  function openIfLink(value) {
-    var v = value ? String(value).trim() : '';
-    if (!v) return;
-    if (/^https?:\/\//i.test(v)) {
-      try { window.open(v, '_blank', 'noopener'); } catch (_e) { window.location.href = v; }
-    }
-  }
-
-function updateQr(address) {
+  function updateQr(address) {
     if (!qrImgEl) return;
     var data = address ? String(address).trim() : '';
     if (!data) {
@@ -76,13 +62,7 @@ function updateQr(address) {
       return;
     }
     if (addressTextEl) addressTextEl.textContent = addr;
-    if (qrCaptionEl) {
-      if (isAtlosPaymentLink(addr)) {
-        qrCaptionEl.textContent = 'Scan the QR code or open the link to complete a ' + NETWORK + ' ' + PAY_CURRENCY + ' deposit.';
-      } else {
-        qrCaptionEl.textContent = 'This address only supports deposits of ' + NETWORK + ' ' + PAY_CURRENCY;
-      }
-    }
+    if (qrCaptionEl) qrCaptionEl.textContent = 'This address only supports deposits of ' + NETWORK + ' ' + PAY_CURRENCY;
     updateQr(addr);
   }
 
@@ -129,7 +109,7 @@ function updateQr(address) {
   function createNowPaymentsAddress(userId) {
     if (!SB || !SB.url || !SB.headers) return Promise.resolve(null);
     var fnUrl = SB.url + '/functions/v1/' + encodeURIComponent(EDGE_FUNCTION);
-    var payload = { user_id: userId, amount_usd: DEFAULT_AMOUNT_USD };
+    var payload = { user_id: userId, amount_usd: DEFAULT_AMOUNT_USD, network: NETWORK, pay_currency: PAY_CURRENCY };
     return fetch(fnUrl, {
       method: 'POST',
       headers: SB.headers(),
@@ -161,15 +141,6 @@ function updateQr(address) {
     });
   }
 
-  function wireOpenLink() {
-    var open = function () {
-      var v = (addressTextEl && addressTextEl.textContent ? addressTextEl.textContent : '').trim();
-      if (isAtlosPaymentLink(v)) openIfLink(v);
-    };
-    if (qrImgEl) qrImgEl.addEventListener('click', open);
-    if (addressTextEl) addressTextEl.addEventListener('click', open);
-  }
-
   function wireNetworkButtons() {
     networkButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -194,7 +165,6 @@ function updateQr(address) {
     setActiveNetworkUI();
     wireNetworkButtons();
     wireCopy();
-    wireOpenLink();
     setLoading('Loading...');
 
     getCurrentSupabaseUserId().then(function (userId) {
