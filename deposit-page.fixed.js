@@ -169,15 +169,19 @@
 
     getCurrentSupabaseUserId().then(function (userId) {
       if (!userId) return;
-      return fetchExistingAddress(userId).then(function (row) {
+            return fetchExistingAddress(userId).then(function (row) {
         if (row && row.pay_address) {
-          setAddress(row.pay_address);
-          return;
+          var existingAddr = String(row.pay_address || '').trim();
+          // If old data contains an ATLOS payment link, regenerate a real wallet address.
+          if (existingAddr && !/^https?:\/\//i.test(existingAddr)) {
+            setAddress(existingAddr);
+            return;
+          }
         }
         return createNowPaymentsAddress(userId).then(function (data) {
           if (!data) return;
           // Edge function returns {pay_address, network, pay_currency, ...}
-          var addr = data.pay_address || data.address || '';
+          var addr = (data.pay_address || data.address || '').trim();
           if (addr) setAddress(addr);
         });
       });
